@@ -8,7 +8,6 @@ import subprocess
 from datetime import datetime
 
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
@@ -18,6 +17,9 @@ from core.exporter import export_to_excel, export_to_json, export_to_html
 
 console = Console()
 
+LINE = "[bold white]================================================================================[/bold white]"
+SUB_LINE = "[dim]--------------------------------------------------------------------------------[/dim]"
+
 BANNER = r"""[bold cyan]
   _                     _  ____                  _   
  | |    ___  __ _  __| |/ ___|  ___ ___  _   _| |_ 
@@ -25,7 +27,7 @@ BANNER = r"""[bold cyan]
  | |__|  __/ (_| | (_| | ___) | (_| (_) | |_| | |_ 
  |_____\___|\__,_|\__,_||____/ \___\___/ \__,_|\__|
 [/bold cyan]
-[dim]🔥 Autonomous B2B Lead Extractor for 2GIS | Open-Source Edition[/dim]
+[bold white]        Автономный B2B-экстрактор лидов 2GIS | Open-Source Edition[/bold white]
 """
 
 STOP_WORDS = {
@@ -64,6 +66,7 @@ CURRENT_FILTERS = {
 def print_banner():
     console.clear()
     console.print(BANNER)
+    console.print(LINE)
 
 # ==============================================================================
 # РАЗДЕЛ 1: СБОР ЛИДОВ (ПОШАГОВЫЙ СЦЕНАРИЙ)
@@ -71,18 +74,12 @@ def print_banner():
 
 def ask_niche() -> str:
     """Шаг 1: Выбор ниши цифрой или ручной ввод."""
-    console.print("\n[bold yellow]Шаг 1 из 3: Выберите сферу бизнеса[/bold yellow]")
-    
-    niche_table = Table(box=None, show_header=False, pad_edge=False)
-    niche_table.add_column("Номер", style="bold cyan", width=4)
-    niche_table.add_column("Название сферы", style="white")
+    console.print("\n[bold yellow]>>> ШАГ 1 ИЗ 3: ВЫБЕРИТЕ СФЕРУ БИЗНЕСА[/bold yellow]\n")
 
     for key, (label, _) in PRESET_NICHES.items():
-        niche_table.add_row(f"[{key}]", label)
+        console.print(f"  [bold cyan][{key}][/bold cyan]  {label}")
 
-    console.print(niche_table)
-    console.print()
-
+    console.print("\n" + SUB_LINE)
     choice = Prompt.ask(
         "[bold white]Выберите вариант [1-7][/bold white]",
         choices=list(PRESET_NICHES.keys()),
@@ -91,13 +88,13 @@ def ask_niche() -> str:
 
     if choice != "7":
         selected_name, query = PRESET_NICHES[choice]
-        console.print(f"[green]✔ Выбрано:[/green] [bold white]{selected_name}[/bold white]\n")
+        console.print(f"\n[bold green]✔ Выбрано:[/bold green] [bold white]{selected_name}[/bold white]\n")
         return query
 
     # Ручной ввод ниши
     while True:
         custom_query = Prompt.ask(
-            "[bold white]Введите сферу бизнеса[/bold white] (например: спа, тату, автомойка)"
+            "\n[bold white]Введите сферу бизнеса[/bold white] (например: спа, тату, автомойка)"
         ).strip()
 
         clean_lower = custom_query.lower()
@@ -114,23 +111,18 @@ def ask_niche() -> str:
             console.print("[bold red]❌ Слишком коротко. Введите минимум 2 символа (например: СПА).[/bold red]")
             continue
 
-        console.print(f"[green]✔ Принято:[/green] [bold white]{custom_query}[/bold white]\n")
+        console.print(f"\n[bold green]✔ Принято:[/bold green] [bold white]{custom_query}[/bold white]\n")
         return custom_query
 
 def ask_city() -> str:
     """Шаг 2: Выбор города цифрой или ручной ввод."""
-    console.print("[bold yellow]Шаг 2 из 3: Выберите город[/bold yellow]")
-    
-    city_table = Table(box=None, show_header=False, pad_edge=False)
-    city_table.add_column("Номер", style="bold cyan", width=4)
-    city_table.add_column("Город", style="white")
+    console.print(SUB_LINE)
+    console.print("[bold yellow]>>> ШАГ 2 ИЗ 3: ВЫБЕРИТЕ ГОРОД[/bold yellow]\n")
 
     for key, (label, _) in TOP_CITIES.items():
-        city_table.add_row(f"[{key}]", label)
+        console.print(f"  [bold cyan][{key}][/bold cyan]  {label}")
 
-    console.print(city_table)
-    console.print()
-
+    console.print("\n" + SUB_LINE)
     choice = Prompt.ask(
         "[bold white]Выберите вариант [1-6][/bold white]",
         choices=list(TOP_CITIES.keys()),
@@ -139,13 +131,13 @@ def ask_city() -> str:
 
     if choice != "6":
         selected_city, _ = TOP_CITIES[choice]
-        console.print(f"[green]✔ Город:[/green] [bold white]{selected_city}[/bold white]\n")
+        console.print(f"\n[bold green]✔ Город:[/bold green] [bold white]{selected_city}[/bold white]\n")
         return selected_city
 
     # Ручной ввод города
     while True:
         raw_city = Prompt.ask(
-            "[bold white]Введите название города[/bold white] (например: Тюмень, Сочи, Нижнекамск)"
+            "\n[bold white]Введите название города[/bold white] (например: Тюмень, Сочи, Нижнекамск)"
         ).strip()
 
         clean_lower = raw_city.lower()
@@ -158,7 +150,7 @@ def ask_city() -> str:
             continue
 
         if any(k in clean_lower for k in CITY_SLUGS.keys()):
-            console.print(f"[green]✔ Город найден в базе 2GIS:[/green] [bold white]{raw_city.capitalize()}[/bold white]\n")
+            console.print(f"\n[bold green]✔ Город найден в базе 2GIS:[/bold green] [bold white]{raw_city.capitalize()}[/bold white]\n")
             return raw_city.capitalize()
 
         matches = difflib.get_close_matches(clean_lower, CITY_SLUGS.keys(), n=1, cutoff=0.6)
@@ -178,11 +170,8 @@ def ask_city() -> str:
 
 def ask_target_leads() -> int:
     """Шаг 3: Выбор количества лидов."""
-    console.print("[bold yellow]Шаг 3 из 3: Количество лидов[/bold yellow]")
-    
-    qty_table = Table(box=None, show_header=False, pad_edge=False)
-    qty_table.add_column("Номер", style="bold cyan", width=4)
-    qty_table.add_column("Объем", style="white")
+    console.print(SUB_LINE)
+    console.print("[bold yellow]>>> ШАГ 3 ИЗ 3: КОЛИЧЕСТВО ЛИДОВ[/bold yellow]\n")
 
     options = {
         "1": ("10 лидов (быстрый сбор)", 10),
@@ -192,24 +181,22 @@ def ask_target_leads() -> int:
     }
 
     for key, (label, _) in options.items():
-        qty_table.add_row(f"[{key}]", label)
+        console.print(f"  [bold cyan][{key}][/bold cyan]  {label}")
 
-    console.print(qty_table)
-    console.print()
-
+    console.print("\n" + SUB_LINE)
     choice = Prompt.ask("[bold white]Выберите вариант [1-4][/bold white]", choices=list(options.keys()), default="2")
 
     if choice != "4":
         val = options[choice][1]
-        console.print(f"[green]✔ Цель:[/green] [bold white]{val} лидов[/bold white]\n")
+        console.print(f"\n[bold green]✔ Цель:[/bold green] [bold white]{val} лидов[/bold white]\n")
         return val
 
     while True:
-        raw_val = Prompt.ask("[bold white]Сколько лидов собрать?[/bold white] (от 5 до 50)", default="25").strip()
+        raw_val = Prompt.ask("\n[bold white]Сколько лидов собрать?[/bold white] (от 5 до 50)", default="25").strip()
         try:
             val = int(raw_val)
             if 5 <= val <= 50:
-                console.print(f"[green]✔ Цель:[/green] [bold white]{val} лидов[/bold white]\n")
+                console.print(f"\n[bold green]✔ Цель:[/bold green] [bold white]{val} лидов[/bold white]\n")
                 return val
             console.print("[bold red]❌ Число должно быть от 5 до 50.[/bold red]\n")
         except ValueError:
@@ -221,25 +208,23 @@ def run_parsing_flow():
 
     # Сводка активных фильтров
     active_badges = []
-    if CURRENT_FILTERS["skip_franchises"]: active_badges.append("[green]✔ Без сетей[/green]")
-    if CURRENT_FILTERS["only_mobile"]: active_badges.append("[magenta]✔ Только моб (+7 9xx)[/magenta]")
-    if CURRENT_FILTERS["require_website"]: active_badges.append("[blue]✔ Только с сайтом[/blue]")
-    if CURRENT_FILTERS["require_messenger"]: active_badges.append("[cyan]✔ Только с TG/WA[/cyan]")
-    if CURRENT_FILTERS["min_rating"] > 0: active_badges.append(f"[yellow]✔ Рейтинг от {CURRENT_FILTERS['min_rating']}+[/yellow]")
-    if not active_badges: active_badges.append("[dim]Стандартные фильтры[/dim]")
+    if CURRENT_FILTERS["skip_franchises"]: active_badges.append("[green]Без сетей[/green]")
+    if CURRENT_FILTERS["only_mobile"]: active_badges.append("[magenta]Только моб (+7 9xx)[/magenta]")
+    if CURRENT_FILTERS["require_website"]: active_badges.append("[blue]Только с сайтом[/blue]")
+    if CURRENT_FILTERS["require_messenger"]: active_badges.append("[cyan]Только с TG/WA[/cyan]")
+    if CURRENT_FILTERS["min_rating"] > 0: active_badges.append(f"[yellow]Рейтинг {CURRENT_FILTERS['min_rating']}+[/yellow]")
+    if not active_badges: active_badges.append("[dim]Стандартные[/dim]")
 
-    console.print(Panel(
-        " • ".join(active_badges),
-        title="[bold white]Активные фильтры (настраиваются в меню [2])[/bold white]",
-        border_style="cyan"
-    ))
+    console.print(f"[bold white]Активные фильтры:[/bold white] " + " | ".join(active_badges))
+    console.print(LINE)
 
     query = ask_niche()
     city = ask_city()
     target_count = ask_target_leads()
 
-    console.print(f"[bold green]🚀 Запускаем сбор:[/bold green] [cyan]{query}[/cyan] в [magenta]{city}[/magenta] (цель: [bold white]{target_count}[/bold white] лидов)...")
-    console.print()
+    console.print(LINE)
+    console.print(f"[bold green]🚀 ЗАПУСК СБОРА:[/bold green] [cyan]{query}[/cyan] в [magenta]{city}[/magenta] (цель: [bold white]{target_count}[/bold white] лидов)...")
+    console.print(LINE + "\n")
 
     leads = []
     with Progress(
@@ -267,22 +252,22 @@ def run_parsing_flow():
         )
 
     if not leads:
-        console.print("[bold red]❌ Ничего не найдено или компании не прошли строгие фильтры. Попробуйте ослабить настройки фильтра или изменить запрос.[/bold red]")
+        console.print("\n[bold red]❌ Ничего не найдено или компании не прошли строгие фильтры.[/bold red]")
         Prompt.ask("\nНажмите Enter, чтобы вернуться в главное меню")
         return
 
-    console.print()
-    console.print(f"[bold green]✨ Успешно собрано:[/bold green] [bold white]{len(leads)}[/bold white] компаний, прошедших все фильтры!\n")
+    console.print("\n" + LINE)
+    console.print(f"[bold green]✨ УСПЕШНО СОБРАНО:[/bold green] [bold white]{len(leads)}[/bold white] компаний!\n")
 
     # ВЫВОД ВСЕЙ БАЗЫ ЦЕЛИКОМ В ТЕРМИНАЛ
-    table = Table(title=f"🎯 Полная база найденных лидов ({query} — {city} | {len(leads)} шт.)", border_style="cyan")
+    table = Table(title=f"🎯 База лидов: {query} ({city}) — {len(leads)} компаний", box=None)
     table.add_column("№", style="dim", width=4)
-    table.add_column("Название компании", style="bold white", min_width=20)
-    table.add_column("Телефон", style="green", min_width=15)
+    table.add_column("Компания", style="bold white", min_width=22)
+    table.add_column("Телефон", style="green", min_width=16)
     table.add_column("Тип", style="yellow", width=8)
     table.add_column("Сайт", style="blue")
     table.add_column("Мессенджеры", style="magenta")
-    table.add_column("Рейтинг", style="yellow", width=7)
+    table.add_column("Рейтинг", style="yellow", width=8)
 
     for i, l in enumerate(leads, 1):
         messengers = []
@@ -296,7 +281,7 @@ def run_parsing_flow():
 
         table.add_row(
             str(i),
-            l.get("name", "")[:28],
+            l.get("name", "")[:30],
             l.get("phone") or "—",
             p_type,
             "Да" if l.get("website") else "—",
@@ -305,7 +290,7 @@ def run_parsing_flow():
         )
 
     console.print(table)
-    console.print()
+    console.print("\n" + LINE)
 
     # Сохранение файлов
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
@@ -321,19 +306,16 @@ def run_parsing_flow():
     export_to_html(leads, html_path, query=query, city=city)
     export_to_json(leads, json_path)
 
-    console.print(Panel(
-        f"[bold green]✔ Excel таблица:[/bold green] [cyan]{excel_path}[/cyan]\n"
-        f"[bold green]✔ Интерактивный дашборд:[/bold green] [cyan]{html_path}[/cyan]\n"
-        f"[bold green]✔ JSON база:[/bold green] [cyan]{json_path}[/cyan]",
-        title="[bold white]Результаты сохранены в папку /output[/bold white]",
-        border_style="green"
-    ))
+    console.print(f"[bold green]✔ Excel таблица:[/bold green] [cyan]{excel_path}[/cyan]")
+    console.print(f"[bold green]✔ Интерактивный дашборд:[/bold green] [cyan]{html_path}[/cyan]")
+    console.print(f"[bold green]✔ JSON база:[/bold green] [cyan]{json_path}[/cyan]")
+    console.print(LINE + "\n")
 
     # Быстрые действия после сбора
     console.print("[bold yellow]Что сделать дальше?[/bold yellow]")
-    console.print(" [1] 🌐 Открыть интерактивный HTML-дашборд в браузере")
-    console.print(" [2] 🔄 Сделать новый поиск")
-    console.print(" [0] 🔙 Вернуться в главное меню\n")
+    console.print("  [1]  🌐 Открыть интерактивный HTML-дашборд в браузере")
+    console.print("  [2]  🔄 Сделать новый поиск")
+    console.print("  [0]  🔙 Вернуться в главное меню\n")
 
     after_choice = Prompt.ask("Выберите действие [0-2]", choices=["0", "1", "2"], default="1")
     if after_choice == "1":
@@ -353,17 +335,17 @@ def run_parsing_flow():
 def edit_filter_franchise():
     """Окно настройки 1: Фильтр франшиз."""
     print_banner()
-    console.print(Panel(
-        "[bold white]Параметр: Фильтрация сетевых франшиз[/bold white]\n\n"
-        "Позволяет отсекать крупные сети (Додо, TopGun, OldBoy, 4hands и др.),\n"
-        "оставляя только частных владельцев бизнеса (быстрее принимают решения).",
-        border_style="cyan"
-    ))
-    curr = "ВКЛ (исключать сети)" if CURRENT_FILTERS["skip_franchises"] else "ВЫКЛ (брать всё)"
-    console.print(f"Текущее значение: [bold green]{curr}[/bold green]\n")
-    console.print(" [1] 🛡️ [bold green]ВКЛЮЧИТЬ[/bold green] — исключать сетевые франшизы")
-    console.print(" [2] 🌐 [bold yellow]ВЫКЛЮЧИТЬ[/bold yellow] — собирать все компании подряд")
-    console.print(" [0] 🔙 Назад в меню фильтров\n")
+    console.print("[bold white]ПАРАМЕТР: ФИЛЬТРАЦИЯ СЕТЕВЫХ ФРАНШИЗ[/bold white]")
+    console.print(SUB_LINE)
+    console.print("Позволяет отсекать крупные сети (Додо, TopGun, OldBoy, 4hands и др.),\nоставляя только частных владельцев бизнеса (быстрее принимают решения).\n")
+    
+    curr = "[bold green]ВКЛ (исключать сети)[/bold green]" if CURRENT_FILTERS["skip_franchises"] else "[bold yellow]ВЫКЛ (брать всё)[/bold yellow]"
+    console.print(f"Текущее значение: {curr}\n")
+    console.print(SUB_LINE)
+    console.print("  [1]  🛡️ [bold green]ВКЛЮЧИТЬ[/bold green] — исключать сетевые франшизы")
+    console.print("  [2]  🌐 [bold yellow]ВЫКЛЮЧИТЬ[/bold yellow] — собирать все компании подряд")
+    console.print("  [0]  🔙 Назад в меню фильтров\n")
+    console.print(LINE)
 
     c = Prompt.ask("Выберите [0-2]", choices=["0", "1", "2"], default="1")
     if c == "1":
@@ -376,17 +358,17 @@ def edit_filter_franchise():
 def edit_filter_phones():
     """Окно настройки 2: Тип телефона."""
     print_banner()
-    console.print(Panel(
-        "[bold white]Параметр: Тип телефонных номеров[/bold white]\n\n"
-        "Позволяет оставлять в базе ТОЛЬКО мобильные номера (+7 9xx...).\n"
-        "Идеально для прямых рассылок и сообщений в WhatsApp и Telegram.",
-        border_style="cyan"
-    ))
-    curr = "ВКЛ (только мобильные)" if CURRENT_FILTERS["only_mobile"] else "ВЫКЛ (все номера)"
-    console.print(f"Текущее значение: [bold green]{curr}[/bold green]\n")
-    console.print(" [1] 📱 [bold green]ВКЛЮЧИТЬ[/bold green] — только мобильные телефоны (+7 9xx...)")
-    console.print(" [2] ☎️ [bold yellow]ВЫКЛЮЧИТЬ[/bold yellow] — любые номера (городские, 8-800 и др.)")
-    console.print(" [0] 🔙 Назад в меню фильтров\n")
+    console.print("[bold white]ПАРАМЕТР: ТИП ТЕЛЕФОННЫХ НОМЕРОВ[/bold white]")
+    console.print(SUB_LINE)
+    console.print("Позволяет оставлять в базе ТОЛЬКО мобильные номера (+7 9xx...).\nИдеально для прямых рассылок и сообщений в WhatsApp и Telegram.\n")
+    
+    curr = "[bold green]ВКЛ (только мобильные)[/bold green]" if CURRENT_FILTERS["only_mobile"] else "[bold yellow]ВЫКЛ (все номера)[/bold yellow]"
+    console.print(f"Текущее значение: {curr}\n")
+    console.print(SUB_LINE)
+    console.print("  [1]  📱 [bold green]ВКЛЮЧИТЬ[/bold green] — только мобильные телефоны (+7 9xx...)")
+    console.print("  [2]  ☎️ [bold yellow]ВЫКЛЮЧИТЬ[/bold yellow] — любые номера (городские, 8-800 и др.)")
+    console.print("  [0]  🔙 Назад в меню фильтров\n")
+    console.print(LINE)
 
     c = Prompt.ask("Выберите [0-2]", choices=["0", "1", "2"], default="1")
     if c == "1":
@@ -399,17 +381,17 @@ def edit_filter_phones():
 def edit_filter_website():
     """Окно настройки 3: Наличие сайта."""
     print_banner()
-    console.print(Panel(
-        "[bold white]Параметр: Обязательное наличие сайта[/bold white]\n\n"
-        "Отсекает компании, у которых нет своего действующего сайта.\n"
-        "Полезно для анализа уровня диджитализации компании.",
-        border_style="cyan"
-    ))
-    curr = "ВКЛ (только с сайтом)" if CURRENT_FILTERS["require_website"] else "ВЫКЛ (не важно)"
-    console.print(f"Текущее значение: [bold green]{curr}[/bold green]\n")
-    console.print(" [1] 🌐 [bold green]ВКЛЮЧИТЬ[/bold green] — только компании с сайтом")
-    console.print(" [2] ⚪ [bold yellow]ВЫКЛЮЧИТЬ[/bold yellow] — собирать даже без сайта")
-    console.print(" [0] 🔙 Назад в меню фильтров\n")
+    console.print("[bold white]ПАРАМЕТР: ОБЯЗАТЕЛЬНОЕ НАЛИЧИЕ САЙТА[/bold white]")
+    console.print(SUB_LINE)
+    console.print("Отсекает компании, у которых нет своего действующего сайта.\nПолезно для анализа уровня диджитализации компании.\n")
+    
+    curr = "[bold green]ВКЛ (только с сайтом)[/bold green]" if CURRENT_FILTERS["require_website"] else "[bold yellow]ВЫКЛ (не важно)[/bold yellow]"
+    console.print(f"Текущее значение: {curr}\n")
+    console.print(SUB_LINE)
+    console.print("  [1]  🌐 [bold green]ВКЛЮЧИТЬ[/bold green] — только компании с сайтом")
+    console.print("  [2]  ⚪ [bold yellow]ВЫКЛЮЧИТЬ[/bold yellow] — собирать даже без сайта")
+    console.print("  [0]  🔙 Назад в меню фильтров\n")
+    console.print(LINE)
 
     c = Prompt.ask("Выберите [0-2]", choices=["0", "1", "2"], default="1")
     if c == "1":
@@ -422,17 +404,17 @@ def edit_filter_website():
 def edit_filter_messengers():
     """Окно настройки 4: Наличие Telegram/WhatsApp."""
     print_banner()
-    console.print(Panel(
-        "[bold white]Параметр: Обязательное наличие мессенджера[/bold white]\n\n"
-        "Оставляет только компании, у которых в 2GIS указана прямая ссылка\n"
-        "на канал/чат в Telegram или контакт в WhatsApp.",
-        border_style="cyan"
-    ))
-    curr = "ВКЛ (только с TG/WA)" if CURRENT_FILTERS["require_messenger"] else "ВЫКЛ (не важно)"
-    console.print(f"Текущее значение: [bold green]{curr}[/bold green]\n")
-    console.print(" [1] 💬 [bold green]ВКЛЮЧИТЬ[/bold green] — только при наличии Telegram или WhatsApp")
-    console.print(" [2] ⚪ [bold yellow]ВЫКЛЮЧИТЬ[/bold yellow] — собирать независимо от мессенджеров")
-    console.print(" [0] 🔙 Назад в меню фильтров\n")
+    console.print("[bold white]ПАРАМЕТР: ОБЯЗАТЕЛЬНОЕ НАЛИЧИЕ МЕССЕНДЖЕРА[/bold white]")
+    console.print(SUB_LINE)
+    console.print("Оставляет только компании, у которых в 2GIS указана прямая ссылка\nна канал/чат в Telegram или контакт в WhatsApp.\n")
+    
+    curr = "[bold green]ВКЛ (только с TG/WA)[/bold green]" if CURRENT_FILTERS["require_messenger"] else "[bold yellow]ВЫКЛ (не важно)[/bold yellow]"
+    console.print(f"Текущее значение: {curr}\n")
+    console.print(SUB_LINE)
+    console.print("  [1]  💬 [bold green]ВКЛЮЧИТЬ[/bold green] — только при наличии Telegram или WhatsApp")
+    console.print("  [2]  ⚪ [bold yellow]ВЫКЛЮЧИТЬ[/bold yellow] — собирать независимо от мессенджеров")
+    console.print("  [0]  🔙 Назад в меню фильтров\n")
+    console.print(LINE)
 
     c = Prompt.ask("Выберите [0-2]", choices=["0", "1", "2"], default="1")
     if c == "1":
@@ -445,17 +427,18 @@ def edit_filter_messengers():
 def edit_filter_rating():
     """Окно настройки 5: Минимальный рейтинг."""
     print_banner()
-    console.print(Panel(
-        "[bold white]Параметр: Минимальный рейтинг в 2GIS[/bold white]\n\n"
-        "Позволяет отсекать компании с плохими отзывами клиентов.",
-        border_style="cyan"
-    ))
-    curr = f"от {CURRENT_FILTERS['min_rating']}+" if CURRENT_FILTERS["min_rating"] > 0 else "Без ограничений"
-    console.print(f"Текущее значение: [bold green]{curr}[/bold green]\n")
-    console.print(" [1] ⚪ Без ограничений (любой рейтинг)")
-    console.print(" [2] ⭐ Только высокий рейтинг (4.0+)")
-    console.print(" [3] ⭐⭐ Премиум рейтинг (4.5+)")
-    console.print(" [0] 🔙 Назад в меню фильтров\n")
+    console.print("[bold white]ПАРАМЕТР: МИНИМАЛЬНЫЙ РЕЙТИНГ В 2GIS[/bold white]")
+    console.print(SUB_LINE)
+    console.print("Позволяет отсекать компании с плохими отзывами клиентов.\n")
+    
+    curr = f"[bold green]от {CURRENT_FILTERS['min_rating']}+[/bold green]" if CURRENT_FILTERS["min_rating"] > 0 else "[bold yellow]Без ограничений[/bold yellow]"
+    console.print(f"Текущее значение: {curr}\n")
+    console.print(SUB_LINE)
+    console.print("  [1]  ⚪ Без ограничений (любой рейтинг)")
+    console.print("  [2]  ⭐ Только высокий рейтинг (4.0+)")
+    console.print("  [3]  ⭐⭐ Премиум рейтинг (4.5+)")
+    console.print("  [0]  🔙 Назад в меню фильтров\n")
+    console.print(LINE)
 
     c = Prompt.ask("Выберите [0-3]", choices=["0", "1", "2", "3"], default="1")
     if c == "1":
@@ -472,46 +455,26 @@ def filters_menu():
     """Главный экран настроек фильтров."""
     while True:
         print_banner()
+        console.print("[bold white]⚙️  НАСТРОЙКИ ФИЛЬТРАЦИИ ПОИСКА[/bold white]\n")
 
-        t = Table(title="⚙️ Настройки фильтрации поиска", border_style="cyan")
-        t.add_column("№", style="bold cyan", width=4)
-        t.add_column("Параметр фильтра", style="white", min_width=30)
-        t.add_column("Текущий статус", style="bold", width=25)
+        f1 = "[bold green]ВКЛ (только частники)[/bold green]" if CURRENT_FILTERS["skip_franchises"] else "[dim]ВЫКЛ (все сети)[/dim]"
+        f2 = "[bold green]ВКЛ (под TG/WA)[/bold green]" if CURRENT_FILTERS["only_mobile"] else "[dim]ВЫКЛ (включая город)[/dim]"
+        f3 = "[bold green]ВКЛ (только с сайтом)[/bold green]" if CURRENT_FILTERS["require_website"] else "[dim]ВЫКЛ (не важно)[/dim]"
+        f4 = "[bold green]ВКЛ (только с чатом)[/bold green]" if CURRENT_FILTERS["require_messenger"] else "[dim]ВЫКЛ (не важно)[/dim]"
+        f5 = f"[bold green]от {CURRENT_FILTERS['min_rating']}+[/bold green]" if CURRENT_FILTERS["min_rating"] > 0 else "[dim]Любой рейтинг[/dim]"
 
-        t.add_row(
-            "[1]",
-            "Исключать сетевые франшизы (Додо, TopGun...)",
-            "[bold green]ВКЛ (только частники)[/bold green]" if CURRENT_FILTERS["skip_franchises"] else "[dim]ВЫКЛ (все сети)[/dim]"
-        )
-        t.add_row(
-            "[2]",
-            "Только мобильные телефоны (+7 9xx...)",
-            "[bold green]ВКЛ (под TG/WA)[/bold green]" if CURRENT_FILTERS["only_mobile"] else "[dim]ВЫКЛ (включая город)[/dim]"
-        )
-        t.add_row(
-            "[3]",
-            "Обязательное наличие сайта",
-            "[bold green]ВКЛ (только с сайтом)[/bold green]" if CURRENT_FILTERS["require_website"] else "[dim]ВЫКЛ (не важно)[/dim]"
-        )
-        t.add_row(
-            "[4]",
-            "Обязательное наличие мессенджера (TG/WA)",
-            "[bold green]ВКЛ (только с чатом)[/bold green]" if CURRENT_FILTERS["require_messenger"] else "[dim]ВЫКЛ (не важно)[/dim]"
-        )
-        t.add_row(
-            "[5]",
-            "Минимальный рейтинг в 2GIS",
-            f"[bold green]от {CURRENT_FILTERS['min_rating']}+[/bold green]" if CURRENT_FILTERS["min_rating"] > 0 else "[dim]Любой рейтинг[/dim]"
-        )
+        console.print(f"  [bold cyan][1][/bold cyan]  Исключать сетевые франшизы (Додо, TopGun...) : {f1}")
+        console.print(f"  [bold cyan][2][/bold cyan]  Только мобильные телефоны (+7 9xx...)        : {f2}")
+        console.print(f"  [bold cyan][3][/bold cyan]  Обязательное наличие сайта                   : {f3}")
+        console.print(f"  [bold cyan][4][/bold cyan]  Обязательное наличие мессенджера (TG/WA)     : {f4}")
+        console.print(f"  [bold cyan][5][/bold cyan]  Минимальный рейтинг в 2GIS                   : {f5}")
 
-        console.print(t)
-        console.print()
-        console.print("[bold yellow]Выберите пункт для настройки:[/bold yellow]")
-        console.print(" [1-5] Переключить параметр в отдельном окне")
-        console.print(" [9]   🚀 [bold green]Перейти к парсингу с этими фильтрами[/bold green]")
-        console.print(" [0]   🔙 Назад в главное меню\n")
+        console.print("\n" + SUB_LINE)
+        console.print("  [bold green][9]  🚀 Начать парсинг с этими фильтрами[/bold green]")
+        console.print("  [dim][0]  🔙 Назад в главное меню[/dim]")
+        console.print(LINE)
 
-        choice = Prompt.ask("Ваш выбор", choices=["0", "1", "2", "3", "4", "5", "9"], default="9")
+        choice = Prompt.ask("[bold white]Выберите пункт [0-5, 9][/bold white]", choices=["0", "1", "2", "3", "4", "5", "9"], default="9")
 
         if choice == "1": edit_filter_franchise()
         elif choice == "2": edit_filter_phones()
@@ -532,30 +495,22 @@ def ai_integration_menu():
     """Меню подключения к ИИ-агенту."""
     print_banner()
 
-    console.print(Panel(
-        "[bold white]🤖 Как подключить LeadScout CLI к ИИ-агенту[/bold white]\n\n"
-        "LeadScout CLI изначально спроектирован для работы в связке с нейросетями\n"
-        "(ChatGPT, Claude, Gemini, Cursor или Antigravity).\n\n"
-        "[bold cyan]1. Прямой импорт в Python код:[/bold cyan]\n"
-        "```python\n"
-        "from core.parser import search_2gis\n\n"
-        "leads = search_2gis(\n"
-        "    query='барбершоп', city='Москва', target_count=20,\n"
-        "    only_mobile=True, skip_franchises=True\n"
-        ")\n"
-        "```\n\n"
-        "[bold cyan]2. Готовый системный промпт:[/bold cyan]\n"
-        "В корне проекта лежит файл [bold green]ai_agent_prompt.txt[/bold green].\n"
-        "Скопируйте его содержимое и вставьте в чат вашему ИИ-агенту.\n"
-        "ИИ поймет структуру собранных лидов и сам напишет персонализированные\n"
-        "сообщения каждому директору без шаблонов и спама.",
-        border_style="magenta"
-    ))
+    console.print("[bold white]🤖  КАК ПОДКЛЮЧИТЬ LEADSCOUT CLI К ИИ-АГЕНТУ[/bold white]\n")
+    console.print("LeadScout CLI изначально спроектирован для работы в связке с нейросетями\n(ChatGPT, Claude, Gemini, Cursor или Antigravity).\n")
+    console.print(SUB_LINE)
+    console.print("[bold cyan]1. Прямой импорт в Python:[/bold cyan]")
+    console.print("   from core.parser import search_2gis")
+    console.print("   leads = search_2gis(query='барбершоп', city='Москва', target_count=20, only_mobile=True)\n")
+    console.print("[bold cyan]2. Готовый системный промпт:[/bold cyan]")
+    console.print("   В корне проекта лежит файл [bold green]ai_agent_prompt.txt[/bold green].")
+    console.print("   Скопируйте его содержимое и вставьте в чат вашему ИИ-агенту,")
+    console.print("   чтобы он сам генерировал персональные офферы каждому директору.")
+    console.print("\n" + SUB_LINE)
 
-    console.print("[bold yellow]Действия:[/bold yellow]")
-    console.print(" [1] 📋 Показать системный промпт на экране")
-    console.print(" [2] 🚀 Перейти к сбору лидов")
-    console.print(" [0] 🔙 Главное меню\n")
+    console.print("  [1]  📋 Показать системный промпт на экране")
+    console.print("  [2]  🚀 Перейти к сбору лидов")
+    console.print("  [0]  🔙 Главное меню\n")
+    console.print(LINE)
 
     c = Prompt.ask("Выберите вариант [0-2]", choices=["0", "1", "2"], default="1")
     if c == "1":
@@ -563,9 +518,9 @@ def ai_integration_menu():
         if os.path.exists(prompt_path):
             with open(prompt_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            console.print("\n" + "=" * 60)
+            console.print("\n" + LINE)
             console.print(content)
-            console.print("=" * 60 + "\n")
+            console.print(LINE + "\n")
         else:
             console.print("[red]Файл ai_agent_prompt.txt не найден.[/red]")
         Prompt.ask("Нажмите Enter для возврата в меню")
@@ -577,23 +532,17 @@ def ai_integration_menu():
 # ==============================================================================
 
 def main_menu():
-    """Главный экран программы."""
+    """Главный экран программы в строгом стиле Zapret."""
     while True:
         print_banner()
 
-        menu_table = Table(box=None, show_header=False, pad_edge=False)
-        menu_table.add_column("Кнопка", style="bold cyan", width=5)
-        menu_table.add_column("Действие", style="white")
+        console.print("  [bold cyan][1][/bold cyan]  🚀  [bold white]Запустить парсинг лидов[/bold white] (сбор контактов 2GIS)")
+        console.print("  [bold cyan][2][/bold cyan]  ⚙️   [bold white]Настройки фильтрации[/bold white] (сети, мобильные, сайты, рейтинг)")
+        console.print("  [bold cyan][3][/bold cyan]  🤖  [bold white]Как подключить к ИИ-агенту[/bold white] (промпт и интеграция)")
+        console.print("  [bold cyan][0][/bold cyan]  🚪  [dim]Выход из программы[/dim]")
 
-        menu_table.add_row("[1]", "🚀 [bold white]Запустить парсинг лидов[/bold white] (сбор контактов 2GIS)")
-        menu_table.add_row("[2]", "⚙️ [bold white]Настройки фильтрации[/bold white] (сети, мобильные, сайты, рейтинг)")
-        menu_table.add_row("[3]", "🤖 [bold white]Как подключить к ИИ-агенту[/bold white] (промпт и интеграция)")
-        menu_table.add_row("[0]", "🚪 [dim]Выход из программы[/dim]")
-
-        console.print(Panel(menu_table, title="[bold white]Главное меню[/bold white]", border_style="cyan"))
-        console.print()
-
-        choice = Prompt.ask("[bold white]Выберите пункт [0-3][/bold white]", choices=["0", "1", "2", "3"], default="1")
+        console.print("\n" + LINE)
+        choice = Prompt.ask("[bold white]Выберите действие [0-3][/bold white]", choices=["0", "1", "2", "3"], default="1")
 
         if choice == "1":
             run_parsing_flow()
