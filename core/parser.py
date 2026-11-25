@@ -66,15 +66,105 @@ CITY_SLUGS = {
     "иваново": "ivanovo",
     "брянск": "bryansk",
     "сургут": "surgut",
-    "белгород": "belgorod"
+    "белгород": "belgorod",
+    "владимир": "vladimir",
+    "чита": "chita",
+    "архангельск": "arkhangelsk",
+    "калуга": "kaluga",
+    "смоленск": "smolensk",
+    "волжский": "volzhsky",
+    "череповец": "cherepovets",
+    "саранск": "saransk",
+    "вологда": "vologda",
+    "якутск": "yakutsk",
+    "владикавказ": "vladikavkaz",
+    "грозный": "grozny",
+    "мурманск": "murmansk",
+    "тамбов": "tambov",
+    "петрозаводск": "petrozavodsk",
+    "кострома": "kostroma",
+    "нижневартовск": "nizhnevartovsk",
+    "новороссийск": "novorossiysk",
+    "йошкар-ола": "yoshkarola",
+    "таганрог": "taganrog",
+    "комсомольск-на-амуре": "komsomolsk",
+    "сыктывкар": "syktyvkar",
+    "нальчик": "nalchik",
+    "шахты": "shakhty",
+    "дзержинск": "dzerzhinsk",
+    "орск": "orsk",
+    "братск": "bratsk",
+    "ангарск": "angarsk",
+    "энгельс": "engels",
+    "благовещенск": "blagoveshchensk",
+    "старыйоскол": "staryoskol",
+    "великий новгород": "novgorod",
+    "псков": "pskov",
+    "бийск": "biysk",
+    "прокопьевск": "prokopyevsk",
+    "рыбинск": "rybinsk",
+    "балаково": "balakovo",
+    "армавир": "armavir",
+    "северодвинск": "severodvinsk",
+    "петропавловск-камчатский": "kamchatsk",
+    "абакан": "abakan",
+    "норильск": "norilsk",
+    "сызрань": "syzran",
+    "волгодонск": "volgodonsk",
+    "новочеркасск": "novocherkassk",
+    "каменск-уральский": "kamensk_uralskiy",
+    "златоуст": "zlatoust",
+    "уссурийск": "ussuriysk",
+    "электросталь": "elektrostal",
+    "альметьевск": "almetevsk",
+    "салават": "salavat",
+    "миасс": "miass",
+    "находка": "nakhodka",
+    "копейск": "kopeysk",
+    "пятигорск": "pyatigorsk",
+    "кисловодск": "kislovodsk",
+    "ессентуки": "essentuki",
+    "рубцовск": "rubtsovsk",
+    "березники": "berezniky",
+    "коломна": "kolomna",
+    "майкоп": "maykop",
+    "одинцово": "odintsovo",
+    "красногорск": "krasnogorsk",
+    "серпухов": "serpukhov",
+    "орехово-зуево": "orekhovo_zuevo",
+    "домодедово": "domodedovo",
+    "щелково": "shchelkovo",
+    "нижнекамск": "nizhnekamsk"
 }
+
+TRANSLIT_MAP = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
+    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+    'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch',
+    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya', ' ': '_'
+}
+
+def transliterate_city(city: str) -> str:
+    """Транслитерирует название любого неизвестного города для поиска в 2GIS."""
+    clean = (city or "").strip().lower()
+    res = []
+    for char in clean:
+        if char in TRANSLIT_MAP:
+            res.append(TRANSLIT_MAP[char])
+        elif char.isalnum() or char in ('_', '-'):
+            res.append(char)
+    slug = "".join(res).strip('_-')
+    return slug or "moscow"
 
 def get_city_slug(city: str) -> str:
     clean = (city or "").strip().lower()
+    # 1. Поиск по словарю точных совпадений
     for key, slug in CITY_SLUGS.items():
         if key in clean:
             return slug
-    return "moscow"
+    # 2. Если город не найден в словаре - умная транслитерация (вместо сброса на Москву)
+    return transliterate_city(clean)
 
 def fetch_firm_details(city_slug: str, pid: str) -> Dict[str, Any]:
     """Запрашивает карточку компании для извлечения контактов и соцсетей."""

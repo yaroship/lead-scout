@@ -95,7 +95,9 @@ def export_to_json(leads: List[Dict[str, Any]], filepath: str) -> str:
 
 def export_to_html(leads: List[Dict[str, Any]], filepath: str, query: str = "", city: str = "") -> str:
     """Генерирует автономный интерактивный HTML-дашборд с поиском и бейджами."""
-    leads_json = json.dumps(leads, ensure_ascii=False)
+    # Безопасное экранирование JSON для вставки внутрь тега <script> (защита от разрыва контекста)
+    raw_json = json.dumps(leads, ensure_ascii=False)
+    safe_json = raw_json.replace("</script>", "<\\/script>").replace("<!--", "<\\!--")
     
     html_content = f"""<!DOCTYPE html>
 <html lang="ru">
@@ -215,7 +217,7 @@ def export_to_html(leads: List[Dict[str, Any]], filepath: str, query: str = "", 
     </table>
 
     <script>
-        const leads = {leads_json};
+        const leads = {safe_json};
         const tbody = document.getElementById("tableBody");
 
         function renderRows(items) {{
