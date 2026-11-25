@@ -259,22 +259,28 @@ def extract_contacts(details: Dict[str, Any]) -> Dict[str, str]:
 def search_2gis(
     query: str,
     city: str = "Москва",
-    max_pages: int = 2,
+    target_count: int = 25,
     skip_franchises: bool = True,
     progress_callback = None
 ) -> List[Dict[str, Any]]:
     """
     Основная функция поиска по 2GIS.
-    Возвращает список нормализованных лидов.
+    Собирает ровно target_count качественных лидов (до 50).
     """
     city_slug = get_city_slug(city)
     encoded_query = urllib.parse.quote(query)
     parsed_leads = []
     seen_names = set()
+    
+    # 1 страница 2GIS дает около 12-20 компаний. Для сбора target_count страниц нужно ceil(target/12) + 1 запасная.
+    max_pages = min(max((target_count // 12) + 2, 1), 5)
 
     for page in range(1, max_pages + 1):
+        if len(parsed_leads) >= target_count:
+            break
+            
         if progress_callback:
-            progress_callback(f"Загрузка страницы {page}/{max_pages} из 2GIS ({city})...")
+            progress_callback(f"Поиск в 2GIS: страница {page}... (уже собрано: {len(parsed_leads)}/{target_count})")
             
         url = f"https://2gis.ru/{city_slug}/search/{encoded_query}/page/{page}"
         html = ""
@@ -361,8 +367,12 @@ def search_2gis(
                 "url_2gis": f"https://2gis.ru/{city_slug}/firm/{pid}"
             }
             parsed_leads.append(lead)
+            if len(parsed_leads) >= target_count:
+                break
             time.sleep(random.uniform(0.4, 0.9))
 
+        if len(parsed_leads) >= target_count:
+            break
         time.sleep(random.uniform(1.0, 1.8))
 
-    return parsed_leads
+    return parsed_leads[:target_count]
