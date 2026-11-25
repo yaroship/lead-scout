@@ -261,10 +261,14 @@ def search_2gis(
     city: str = "Москва",
     target_count: int = 25,
     skip_franchises: bool = True,
+    only_mobile: bool = False,
+    require_website: bool = False,
+    require_messenger: bool = False,
+    min_rating: float = 0.0,
     progress_callback = None
 ) -> List[Dict[str, Any]]:
     """
-    Основная функция поиска по 2GIS.
+    Основная функция поиска по 2GIS с поддержкой расширенных фильтров.
     Собирает ровно target_count качественных лидов (до 50).
     """
     city_slug = get_city_slug(city)
@@ -272,8 +276,9 @@ def search_2gis(
     parsed_leads = []
     seen_names = set()
     
-    # 1 страница 2GIS дает около 12-20 компаний. Для сбора target_count страниц нужно ceil(target/12) + 1 запасная.
-    max_pages = min(max((target_count // 12) + 2, 1), 5)
+    # Если включены строгие фильтры (только моб, только сайт), нужно просканировать больше страниц
+    pages_multiplier = 2 if (only_mobile or require_website or require_messenger) else 1
+    max_pages = min(max(((target_count // 10) + 1) * pages_multiplier, 2), 6)
 
     for page in range(1, max_pages + 1):
         if len(parsed_leads) >= target_count:
@@ -332,14 +337,21 @@ def search_2gis(
                 continue
             seen_names.add(clean_name.lower())
 
-            # Фильтрация франшиз
+            # 1. Фильтрация франшиз (сетей)
             is_franchise, brand = check_franchise(clean_name)
             if skip_franchises and is_franchise:
                 continue
 
             address = data.get('address_name') or ''
-            rating = data.get('reviews', {}).get('general_rating') or 0.0
-            reviews_count = data.get('reviews', {}).get('general_review_count') or 0
+            try:
+                rating = float(data.get('reviews', {}).get('general_rating') or 0.0)
+            except (ValueError, TypeError):
+                rating = 0.0
+            reviews_count = int(data.get('reviews', {}).get('general_review_count') or 0)
+
+            # 2. Фильтрация по минимальному рейтингу
+            if min_rating > 0 and rating > 0 and rating < min_rating:
+                continue
 
             # Подгрузка контактов (карточка фирмы)
             if progress_callback:
@@ -347,6 +359,18 @@ def search_2gis(
                 
             details = fetch_firm_details(city_slug, pid)
             contacts = extract_contacts(details)
+
+            # 3. Фильтр только мобильных номеров (для мессенджеров)
+            if only_mobile and contacts["phone_type"] != "mobile":
+                continue
+
+            # 4. Фильтр наличия сайта
+            if require_website and not contacts["website"]:
+                continue
+
+            # 5. Фильтр наличия мессенджеров (Telegram или WhatsApp)
+            if require_messenger and not (contacts["telegram"] or contacts["whatsapp"]):
+                continue
 
             lead = {
                 "pid": pid,
