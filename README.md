@@ -38,8 +38,8 @@
 
 ### 1. Клонирование репозитория
 ```bash
-git clone https://github.com/your-username/lead-scout-cli.git
-cd lead-scout-cli
+git clone https://github.com/yaroship/lead-scout.git
+cd lead-scout
 ```
 
 ### 2. Установка зависимостей
